@@ -1,0 +1,59 @@
+services:
+  db:
+    image: postgres:17.6
+    container_name: finnhub_alerter_db
+    env_file:
+      - .env.development.local
+    ports:
+      - "5432:5432"
+    volumes:
+      - db_data:/var/lib/postgresql/data
+      - ./postgres-init:/docker-entrypoint-initdb.d
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U $$POSTGRES_USER -d $$POSTGRES_DB"]
+      interval: 5s
+      timeout: 2s
+      retries: 10
+    networks:
+      - finnhub_alerter_network
+
+  redis:
+    image: redis:7-alpine
+    container_name: finnhub_alerter_redis
+    ports:
+      - "6379:6379"
+    healthcheck:
+      test: ["CMD", "redis-cli", "ping"]
+      interval: 5s
+      timeout: 2s
+      retries: 10
+    networks:
+      - finnhub_alerter_network
+
+  app:
+    build: .
+    container_name: finnhub_alerter_app
+    env_file:
+      - .env.development.app
+    ports:
+      - "8000:8000"
+    depends_on:
+      db:
+        condition: service_healthy
+      redis:
+        condition: service_healthy
+    networks:
+      - finnhub_alerter_network
+    command: ["npm", "run", "start:dev"]
+    volumes:
+      - ./src:/usr/src/app/src
+      - ./tsconfig.json:/usr/src/app/tsconfig.json
+      - ./package.json:/usr/src/app/package.json
+      - ./package-lock.json:/usr/src/app/package-lock.json
+
+networks:
+  finnhub_alerter_network:
+    driver: bridge
+
+volumes:
+  db_data:
