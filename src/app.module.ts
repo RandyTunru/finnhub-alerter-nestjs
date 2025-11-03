@@ -2,6 +2,10 @@ import { Module } from '@nestjs/common';
 import { ConfigModule, ConfigService } from '@nestjs/config';
 import { TypeOrmModule } from '@nestjs/typeorm';
 import { AuthModule } from './routers/auth/auth.module';
+import { StocksModule } from './routers/stocks/stocks.module';
+import { AlertsModule } from './routers/alerts/alerts.module';
+import { APP_INTERCEPTOR } from '@nestjs/core';
+import { ZodSerializerInterceptor } from 'nestjs-zod';
 
 @Module({
   imports: [
@@ -27,7 +31,14 @@ import { AuthModule } from './routers/auth/auth.module';
       }),
     }),
     AuthModule,
+    StocksModule,
+    AlertsModule,
   ],
-  providers: [],
+  providers: [
+    {
+      provide: APP_INTERCEPTOR,
+      useClass: ZodSerializerInterceptor,
+    },
+  ],
 })
 export class AppModule {}
