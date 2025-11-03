@@ -3,7 +3,7 @@ services:
     image: postgres:17.6
     container_name: finnhub_alerter_db
     env_file:
-      - .env.development.local
+      - .env.docker.db
     ports:
       - "5432:5432"
     volumes:
@@ -34,7 +34,7 @@ services:
     build: .
     container_name: finnhub_alerter_app
     env_file:
-      - .env.development.app
+      - .env.docker.app
     ports:
       - "8000:8000"
     depends_on:
