@@ -16,7 +16,6 @@ export class AuthController {
     return this.authService.signin(body);
   }
 
-  // --- SIGN UP ---
   @Post('signup')
   signup(@Body() body: SignUpRequest): Promise<{ message: string }> {
     return this.authService.signup(body);
