@@ -1,12 +1,19 @@
 import {
   ConflictException,
   BadRequestException,
+  NotFoundException,
   Injectable,
 } from '@nestjs/common';
 import { InjectRepository } from '@nestjs/typeorm';
 import { QueryFailedError, Repository } from 'typeorm';
 import { Alert } from '../../entities/alert.entity';
-import { PostAlertRequest, GetAlertsResponse } from './alerts.type';
+import type {
+  AlertItem,
+  PostAlertRequest,
+  GetAlertsResponse,
+  PostAlertResponse,
+  DeleteAlertResponse,
+} from './alerts.type';
 import { AlertStatus } from '../../entities/alert.entity';
 
 @Injectable()
@@ -19,7 +26,7 @@ export class AlertsService {
   async postAlert(
     headers: Record<string, string>,
     dto: PostAlertRequest,
-  ): Promise<{ message: string }> {
+  ): Promise<PostAlertResponse> {
     const userId = headers['user-id'];
 
     const checkResult = await this.alertsRepository
@@ -68,7 +75,10 @@ export class AlertsService {
         userId: userId,
       });
       await this.alertsRepository.save(alert);
-      return { message: 'Alert created successfully' };
+      return {
+        message: 'Alert created successfully',
+        item: alert,
+      };
     } catch (error) {
       console.error('Error creating alert:', error);
 
@@ -93,5 +103,31 @@ export class AlertsService {
     });
 
     return { count, alerts };
+  }
+
+  async deleteAlert(
+    headers: Record<string, string>,
+    alertId: string,
+  ): Promise<DeleteAlertResponse> {
+    const userId = headers['user-id'];
+
+    const alert = await this.alertsRepository.findOne({
+      where: { id: alertId, userId },
+    });
+
+    if (!alert) {
+      throw new NotFoundException('Alert not found');
+    }
+
+    const alertItemtoReturn: AlertItem = {
+      id: alert.id,
+      stockSymbol: alert.stockSymbol,
+      targetPrice: alert.targetPrice,
+      condition: alert.condition,
+      status: alert.status,
+    };
+
+    await this.alertsRepository.remove(alert);
+    return { message: 'Alert deleted successfully', item: alertItemtoReturn };
   }
 }
